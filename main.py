@@ -1,27 +1,80 @@
+import json
+import re
+
 from flask import Flask, request, jsonify
 from vertexai.generative_models import GenerativeModel
 import vertexai
+from youtube_transcript_api import YouTubeTranscriptApi
+from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptFound
 
 app = Flask(__name__)
-vertexai.init(project="eastern-academy-375008", location="asia-southeast1")
-model = GenerativeModel("gemini-1.5-pro")
+vertexai.init(project="eastern-academy-375008", location="us-central1")
+model = GenerativeModel("gemini-2.0-flash-001")
 
-@app.route("/generate-quiz", methods=["POST"])
+
+def get_youtube_transcript(youtube_url: str) -> str:
+    # Extract video ID using regex
+    video_id_match = re.search(r'(?:v=|youtu\.be/)([a-zA-Z0-9_-]{11})', youtube_url)
+    if not video_id_match:
+        raise ValueError("Invalid YouTube URL")
+
+    video_id = video_id_match.group(1)
+    print(f"Extracted Video ID: {video_id}")
+
+    try:
+        # Try to get English transcript first
+        try:
+            transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['en'])
+            transcript_text = " ".join([item['text'] for item in transcript])
+            print(f"Successfully fetched English transcript (length: {len(transcript_text)} chars)")
+            return transcript_text
+        except (TranscriptsDisabled, NoTranscriptFound):
+            # If no English transcript, try any available language
+            try:
+                transcript = YouTubeTranscriptApi.get_transcript(video_id)
+                transcript_text = " ".join([item['text'] for item in transcript])
+                print(f"Successfully fetched transcript in another language (length: {len(transcript_text)} chars)")
+                return transcript_text
+            except Exception as e:
+                raise Exception(f"No transcripts available for video {video_id}") from e
+
+    except Exception as e:
+        raise Exception(f"Failed to get transcript: {str(e)}")
+
+
+@app.route("/generate-questions", methods=["POST"])
 def generate_quiz():
     data = request.json
-    transcript = data.get("transcript")
+    yt_url = data.get("url")
+    number_of_questions = data.get("n_of_q")
+    format = data.get("format")
+    transcript = get_youtube_transcript(yt_url)
 
-    prompt = f"""
-    Generate 5 MCQs from the following transcript. Each question must include:
-    - question
-    - options (A, B, C, D)
-    - correct_answer (one letter)
-    - explanation
-    - difficulty (easy/medium/hard)
-
-    Transcript:
-    {transcript}
-    """
+    prompt = f"From the below transcript, generate {number_of_questions} questions as a json array in this format" + f"""{format}""" + f" Transcript:{transcript}"
 
     response = model.generate_content(prompt)
-    return jsonify({"questions": response.text})
+    try:
+        # Remove markdown code blocks and whitespace
+        json_str = response.text.strip()
+        if json_str.startswith("```json"):
+            json_str = json_str[7:]  # Remove ```json
+        if json_str.startswith("```"):
+            json_str = json_str[3:]  # Remove ```
+        if json_str.endswith("```"):
+            json_str = json_str[:-3]  # Remove ```
+
+        # Parse the cleaned JSON
+        questions = json.loads(json_str)
+
+    except json.JSONDecodeError as e:
+        return jsonify({
+            "error": "Failed to parse model response",
+            "raw_response": response.text,
+            "exception": str(e)
+        }), 500
+
+    return jsonify({"questions": questions})
+
+
+if __name__ == "__main__":
+    app.run(debug=True)
