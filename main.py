@@ -56,7 +56,7 @@ def generate_quiz():
         }), 500
 
     prompt = f"""
-    You are an expert exam creator. Based on the following transcript, generate {number_of_questions} high-quality questions and quiz data.
+    You are an expert exam creator. Based on the following youtube video ${yt_url}, generate {number_of_questions} high-quality questions and quiz data.
 
     Output a JSON object with the structure:
     {{
