@@ -17,10 +17,8 @@ def get_youtube_transcript(youtube_url: str) -> str:
     video_id_match = re.search(r'(?:v=|youtu\.be/)([a-zA-Z0-9_-]{11})', youtube_url)
     if not video_id_match:
         raise ValueError("Invalid YouTube URL")
-
     video_id = video_id_match.group(1)
     print(f"Extracted Video ID: {video_id}")
-
     try:
         # Try to get English transcript first
         try:
@@ -42,16 +40,37 @@ def get_youtube_transcript(youtube_url: str) -> str:
         raise Exception(f"Failed to get transcript: {str(e)}")
 
 
-@app.route("/generate-questions", methods=["POST"])
+@app.route("/quiz", methods=["POST"])
 def generate_quiz():
     data = request.json
     yt_url = data.get("url")
     number_of_questions = data.get("n_of_q")
-    format = data.get("format")
-    transcript = get_youtube_transcript(yt_url)
+    question_format = data.get("question_format")
+    quiz_format = data.get("quiz_format")
+    try:
+        transcript = get_youtube_transcript(yt_url)
+    except Exception as e:
+        return jsonify({
+            "error": "Failed to get transcript",
+            "exception": str(e)
+        }), 500
 
-    prompt = f"From the below transcript, generate {number_of_questions} questions as a json array in this format" + f"""{format}""" + f" Transcript:{transcript}"
+    prompt = f"""
+    You are an expert exam creator. Based on the following transcript, generate {number_of_questions} high-quality questions and quiz data.
 
+    Output a JSON object with the structure:
+    {{
+      "questions": {question_format},
+      "quiz": {quiz_format}
+    }}
+
+    Only return the JSON object. Do not include any explanation or markdown formatting. make sure the explanation is correct and elaborate.
+
+    Transcript:
+    \"\"\"
+    {transcript}
+    \"\"\"
+    """
     response = model.generate_content(prompt)
     try:
         # Remove markdown code blocks and whitespace
