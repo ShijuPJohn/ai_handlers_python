@@ -12,23 +12,24 @@ model = GenerativeModel("gemini-2.0-flash-001")
 @app.route("/quiz", methods=["POST"])
 def generate_quiz():
     data = request.json
-    yt_url = data.get("url")
-    number_of_questions = data.get("n_of_q")
+    prompt = data.get("prompt")
+    questions_count = data.get("n_of_q")
     language = data.get("language")
     question_format = data.get("question_format")
     quiz_format = data.get("quiz_format")
-
     prompt = f"""
-As an expert exam creator, analyze the YouTube video at {yt_url} and generate {number_of_questions} accurate questions in {language}. Base all content strictly on the video.
+    Generate {questions_count} exam-style questions in {language} based on this: {prompt}.
 
-Return a single JSON object with:
-{{
-  "questions": {question_format},
-  "quiz": {quiz_format}
-}}
+    Ensure all questions, options, and explanations are factually accurate and well-researched.
 
-Return only JSON. Quiz name should be video title + " quiz". Include LaTeX (<pre> tags for code). Question types: m-choice (single) or m-select (multi). Keep explanations accurate and reasonably elaborate.
-"""
+    Return a JSON with:
+    {{
+      "questions": {question_format},
+      "quiz": {quiz_format}
+    }}
+
+    Only return JSON. Use <pre> for code blocks. Question types: "m-choice" (single answer) or "m-select" (multiple answers). Explanations must be correct and reasonably detailed.
+    """
     response = model.generate_content(prompt)
     try:
         # Remove markdown code blocks and whitespace
