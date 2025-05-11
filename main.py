@@ -28,7 +28,7 @@ def generate_quiz():
       "quiz": {quiz_format}
     }}
 
-    Only return JSON. Use <pre> for code blocks. Question types: "m-choice" (single answer) or "m-select" (multiple answers). Explanations must be correct and reasonably detailed.
+    Only return JSON. Use <pre> for code blocks. Question types: "m-choice" (single answer) or "m-select" (multiple answers). Explanations must be correct and reasonably detailed. don't include the english transliteration for other languages
     """
     response = model.generate_content(prompt)
     try:
