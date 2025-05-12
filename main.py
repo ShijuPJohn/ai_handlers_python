@@ -1,4 +1,5 @@
 import json
+import re
 
 import vertexai
 from flask import Flask, request, jsonify
@@ -17,41 +18,52 @@ def generate_quiz():
     language = data.get("language")
     question_format = data.get("question_format")
     quiz_format = data.get("quiz_format")
+    question_type = data.get("question_type")
     prompt = f"""
-    Generate {questions_count} exam-style questions in {language} based on this: {prompt}.
+        Generate {questions_count} exam-style questions in {language} based on this: {prompt}.
+        Mathematics: Use LaTeX syntax.
+        Code Blocks: like this: \\n\\n```python\\nprint(2 ** 3 ** 2)\\n```
+        Ensure all questions, options, and explanations are factually accurate and well-researched.
+        type of questionse: {question_type}
+        Return a JSON with:
+        {{
+          "questions": {question_format},
+          "quiz": {quiz_format}
+        }}
 
-    Ensure all questions, options, and explanations are factually accurate and well-researched.
-
-    Return a JSON with:
-    {{
-      "questions": {question_format},
-      "quiz": {quiz_format}
-    }}
-
-    Only return JSON. Use <pre> for code blocks. Question types: "m-choice" (single answer) or "m-select" (multiple answers). Explanations must be correct and reasonably detailed. don't include the english transliteration for other languages
-    """
+        Only return JSON. Use ``` for code blocks. Question types: "m-choice" (single answer) or "m-select" (multiple answers). Explanations must be correct and reasonably detailed. don't include the english transliteration for other languages
+        """
     response = model.generate_content(prompt)
-    try:
-        # Remove markdown code blocks and whitespace
-        json_str = response.text.strip()
-        if json_str.startswith("```json"):
-            json_str = json_str[7:]  # Remove ```json
-        if json_str.startswith("```"):
-            json_str = json_str[3:]  # Remove ```
-        if json_str.endswith("```"):
-            json_str = json_str[:-3]  # Remove ```
 
-        # Parse the cleaned JSON
-        questions = json.loads(json_str)
+    try:
+
+        raw_json = response.text.strip()
+
+        if raw_json.startswith("```json"):
+            raw_json = raw_json[7:].strip()
+        if raw_json.startswith("```"):
+            raw_json = raw_json[3:].strip()
+
+        if raw_json.endswith("```"):
+            raw_json = raw_json[:-3].strip()
+
+        data = json.loads(raw_json)
+
+        return jsonify({"questions": data})
 
     except json.JSONDecodeError as e:
+        error_context = raw_json[max(0, e.pos - 20):min(len(raw_json), e.pos + 20)]
+
         return jsonify({
             "error": "Failed to parse model response",
-            "raw_response": response.text,
-            "exception": str(e)
+            "details": {
+                "exception": str(e),
+                "position": e.pos,
+                "context": error_context,
+                "suggestion": "Check for unescaped backslashes (LaTeX) or invalid JSON syntax."
+            },
+            "raw_response": response.text  # Original response for debugging
         }), 500
-
-    return jsonify({"questions": questions})
 
 
 if __name__ == "__main__":
