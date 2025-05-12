@@ -21,50 +21,57 @@ def generate_quiz():
     question_type = data.get("question_type")
     prompt = f"""
         Generate {questions_count} exam-style questions in {language} based on this: {prompt}.
-        Mathematics: Use LaTeX syntax.
-        Code Blocks: like this: \\n\\n```python\\nprint(2 ** 3 ** 2)\\n```
-        Ensure all questions, options, and explanations are factually accurate and well-researched.
-        type of questionse: {question_type}
-        Return a JSON with:
+
+        For mathematics, enclose equations within double dollar signs for LaTeX (e.g., $$\\frac{{a}}{{b}}$$).
+
+        For code blocks, use triple backticks with the language specified (e.g., ```python\\nprint("Hello")\\n```). Ensure proper newline characters (\\n) within the code.
+
+        Ensure all questions, options (if applicable based on question_format), and explanations are factually accurate and well-researched.
+
+        Type of questions: {question_type}
+        Question format: {question_format}
+        Quiz format: {quiz_format}
+
+        Return a JSON object with the following structure:
         {{
           "questions": {question_format},
           "quiz": {quiz_format}
         }}
 
-        Only return JSON. Use ``` for code blocks. Question types: "m-choice" (single answer) or "m-select" (multiple answers). Explanations must be correct and reasonably detailed. don't include the english transliteration for other languages
-        """
+        Strictly adhere to valid JSON format. Do not include any extra text or explanations outside the JSON.
+        Do not include the English transliteration for other languages.
+        Do not include options directly in the question statement (they should be part of the {question_format}).
+    """
     response = model.generate_content(prompt)
 
+
+
+    raw_json = response.text.strip()
+
+    # Remove any leading/trailing backticks (common with code generation)
+    if raw_json.startswith("```"):
+        raw_json = raw_json[3:].lstrip()
+    if raw_json.endswith("```"):
+        raw_json = raw_json[:-3].rstrip()
+    if raw_json.startswith("json"):
+        raw_json = raw_json[4:].lstrip()
+
     try:
-
-        raw_json = response.text.strip()
-
-        if raw_json.startswith("```json"):
-            raw_json = raw_json[7:].strip()
-        if raw_json.startswith("```"):
-            raw_json = raw_json[3:].strip()
-
-        if raw_json.endswith("```"):
-            raw_json = raw_json[:-3].strip()
-
         data = json.loads(raw_json)
-
         return jsonify({"questions": data})
 
     except json.JSONDecodeError as e:
         error_context = raw_json[max(0, e.pos - 20):min(len(raw_json), e.pos + 20)]
-
         return jsonify({
             "error": "Failed to parse model response",
             "details": {
                 "exception": str(e),
                 "position": e.pos,
                 "context": error_context,
-                "suggestion": "Check for unescaped backslashes (LaTeX) or invalid JSON syntax."
+                "suggestion": "Check the raw response for JSON syntax errors, especially around LaTeX and code blocks."
             },
-            "raw_response": response.text  # Original response for debugging
+            "raw_response": response.text
         }), 500
-
 
 if __name__ == "__main__":
     app.run(debug=True)
