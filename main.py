@@ -22,9 +22,11 @@ def generate_quiz():
     prompt = f"""
         Generate {questions_count} exam-style questions in {language} based on this: {prompt}.
 
-        For mathematics, enclose equations within double dollar signs for LaTeX (e.g., $$\\frac{{a}}{{b}}$$).
+        For mathematics within questions, enclose equations within double dollar signs for LaTeX (e.g., $$\\frac{{a}}{{b}}$$).
 
         For code blocks, use triple backticks with the language specified (e.g., ```python\\nprint("Hello")\\n```). Ensure proper newline characters (\\n) within the code.
+
+        When providing explanations, if there are any mathematical expressions, ensure they are also enclosed within double dollar signs for LaTeX (e.g., The probability is $$\frac{{1}}{{6}}$$).
 
         Ensure all questions, options (if applicable based on question_format), and explanations are factually accurate and well-researched.
 
