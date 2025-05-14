@@ -20,6 +20,8 @@ def generate_quiz():
     quiz_format = data.get("quiz_format")
     question_type = data.get("question_type")
     difficulty = data.get("difficulty")
+    if not difficulty or difficulty==0:
+        difficulty="all difficulty levels"
     prompt = f"""
         Generate {questions_count} exam-style questions in {language} based on this: {prompt}.
 
@@ -34,7 +36,7 @@ def generate_quiz():
         Type of questions: {question_type}
         Question format: {question_format}
         Quiz format: {quiz_format}
-        Difficulty:{difficulty}
+        Difficulty:{difficulty} on a scale from 1 to 10
 
         Return a JSON object with the following structure:
         {{
