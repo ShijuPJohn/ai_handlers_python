@@ -6,7 +6,7 @@ from flask import Flask, request, jsonify
 from vertexai.generative_models import GenerativeModel
 
 app = Flask(__name__)
-vertexai.init(project="eastern-academy-375008", location="us-central1")
+vertexai.init(project="eastern-academy-375008", location="asia-south1")
 model = GenerativeModel("gemini-2.0-flash-001")
 
 
@@ -19,6 +19,7 @@ def generate_quiz():
     question_format = data.get("question_format")
     quiz_format = data.get("quiz_format")
     question_type = data.get("question_type")
+    difficulty = data.get("difficulty")
     prompt = f"""
         Generate {questions_count} exam-style questions in {language} based on this: {prompt}.
 
@@ -33,6 +34,7 @@ def generate_quiz():
         Type of questions: {question_type}
         Question format: {question_format}
         Quiz format: {quiz_format}
+        Difficulty:{difficulty}
 
         Return a JSON object with the following structure:
         {{
@@ -45,8 +47,6 @@ def generate_quiz():
         Do not include options directly in the question statement (they should be part of the {question_format}).
     """
     response = model.generate_content(prompt)
-
-
 
     raw_json = response.text.strip()
 
@@ -74,6 +74,7 @@ def generate_quiz():
             },
             "raw_response": response.text
         }), 500
+
 
 if __name__ == "__main__":
     app.run(debug=True)
