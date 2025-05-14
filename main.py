@@ -6,7 +6,7 @@ from flask import Flask, request, jsonify
 from vertexai.generative_models import GenerativeModel
 
 app = Flask(__name__)
-vertexai.init(project="eastern-academy-375008", location="asia-south1")
+vertexai.init(project="eastern-academy-375008", location="us-central1")
 model = GenerativeModel("gemini-2.0-flash-001")
 
 
