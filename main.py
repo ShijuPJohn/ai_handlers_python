@@ -33,7 +33,7 @@ def generate_quiz():
 
         Ensure all questions, options (if applicable based on question_format), and explanations are factually accurate and well-researched.
 
-        Type of questions: {question_type}
+        Type of questions: {question_type} 
         Question format: {question_format}
         Quiz format: {quiz_format}
         Difficulty:{difficulty} on a scale from 1 to 10
@@ -47,6 +47,7 @@ def generate_quiz():
         Strictly adhere to valid JSON format. Do not include any extra text or explanations outside the JSON.
         Do not include the English transliteration for other languages.
         Do not include options directly in the question statement (they should be part of the {question_format}).
+        If the Type of questions is mcq, be strictly single select. dont include more than one correct answer.
     """
     response = model.generate_content(prompt)
 
