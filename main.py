@@ -20,35 +20,39 @@ def generate_quiz():
     quiz_format = data.get("quiz_format")
     question_type = data.get("question_type")
     difficulty = data.get("difficulty")
-    if not difficulty or difficulty==0:
-        difficulty="all difficulty levels"
+    if not difficulty or difficulty == 0:
+        difficulty = "all difficulty levels"
+
+
     prompt = f"""
-        Generate {questions_count} exam-style questions in {language} based on this: {prompt}.
-
-        For mathematics within questions, enclose equations within double dollar signs for LaTeX (e.g., $$\\frac{{a}}{{b}}$$).
-
-        For code blocks, use triple backticks with the language specified (e.g., ```python\\nprint("Hello")\\n```). Ensure proper newline characters (\\n) within the code.
-
-        When providing explanations, if there are any mathematical expressions, ensure they are also enclosed within double dollar signs for LaTeX (e.g., The probability is $$\frac{{1}}{{6}}$$).
-
-        Ensure all questions, options (if applicable based on question_format), and explanations are factually accurate and well-researched.
-
-        Type of questions: {question_type} 
-        Question format: {question_format}
-        Quiz format: {quiz_format}
-        Difficulty:{difficulty} on a scale from 1 to 10
-
-        Return a JSON object with the following structure:
-        {{
-          "questions": {question_format},
-          "quiz": {quiz_format}
-        }}
-
-        Strictly adhere to valid JSON format. Do not include any extra text or explanations outside the JSON.
-        Do not include the English transliteration for other languages.
-        Do not include options directly in the question statement (they should be part of the {question_format}).
-        If the Type of questions is mcq, be strictly single select. dont include more than one correct answer.
+    Generate {questions_count} exam-style questions in {language} based on this: {prompt}.
+    
+    For mathematics within questions, enclose equations within double dollar signs and use **double backslashes** for LaTeX (e.g., $$\\\\frac{{a}}{{b}}$$).
+    
+    For code blocks, use triple backticks with the language specified (e.g., ```python\\nprint(\\"Hello\\")\\n```). Ensure proper newline characters (\\n) within the code.
+    
+    When providing explanations, if there are any mathematical expressions, ensure they are also enclosed within double dollar signs and use **double backslashes** for LaTeX (e.g., The probability is $$\\\\frac{{1}}{{6}}$$).
+    
+    Ensure all questions, options (if applicable based on question_format), and explanations are factually accurate and well-researched.
+    
+    Type of questions: {question_type}  
+    Question format: {question_format}  
+    Quiz format: {quiz_format}  
+    Difficulty: {difficulty} on a scale from 1 to 10
+    
+    Return a JSON object with the following structure:
+    {{
+      "questions": {question_format},
+      "quiz": {quiz_format}
+    }}
+    
+    Strictly adhere to valid JSON format:
+    - Do not include any extra text or explanations outside the JSON.
+    - Do not include the English transliteration for other languages.
+    - Do not include options directly in the question statement (they should be part of the {question_format}).
+    - If the Type of questions is mcq, be strictly single select. Don't include more than one correct answer.
     """
+
     response = model.generate_content(prompt)
 
     raw_json = response.text.strip()
@@ -77,7 +81,6 @@ def generate_quiz():
             },
             "raw_response": response.text
         }), 500
-
 
 if __name__ == "__main__":
     app.run(debug=True)
